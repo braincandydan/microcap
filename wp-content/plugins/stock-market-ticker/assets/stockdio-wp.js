@@ -6,86 +6,173 @@ if (typeof(stockdio_event) == "undefined") {
   var stockdio_eventer = window[stockdio_eventMethod];
   var stockdio_messageEvent = stockdio_eventMethod == "attachEvent" ? "onmessage" : "message";
   stockdio_eventer(stockdio_messageEvent, function (e) {
-	  if (e.origin !== "https://api.stockdio.com") return;
-	 if (typeof(e.data) != "undefined" && typeof(e.data.method) != "undefined") {
-		eval(e.data.method);
-	 }
+	  	if (e.origin !== "https://api.stockdio.com") return;
+		if (typeof(e.data) != "undefined" && typeof(e.data.methodName) != "undefined") {
+			var methodName = e.data.methodName;
+			var params = e.data.methodParams;
+			switch (methodName) 
+			{
+				case 'clickNews':
+					window.open(params[0]);
+				break;
+				case 'clickQuote':
+					if (params[1] === 'self')
+						window.location.href=params[0];
+					else
+						window.open(params[0]);
+					break;
+				case 'adjustBorderHeight':
+					var stockdio_iframe = document.getElementById(params[0]); 
+					if (stockdio_iframe != undefined && stockdio_iframe != null)
+						stockdio_iframe.height = params[1];
+					break;
+				case 'adjustFinancialBorderHeight':
+					var stockdio_iframe = document.getElementById(params[0]); 
+					if (stockdio_iframe != undefined && stockdio_iframe != null) { 
+						stockdio_iframe.height = params[1];
+						stockdio_iframe.style.height = `${params[1]}px`; 
+					}
+					break;
+				case 'cssLoaded':
+					var stockdio_iframe = document.getElementById(params[0]); 
+					console.log('stockdio_iframe',params[1],stockdio_iframe);
+					if (stockdio_iframe != undefined && stockdio_iframe != null) 
+						stockdio_iframe.height = params[1];
+					break;
+				case 'setIframeHeight': 
+					if (params[3] != 'Ticker') {
+						var stockdio_iframe = document.getElementById(params[0]); 
+						if (stockdio_iframe != undefined && stockdio_iframe != null) { 
+							stockdio_iframe.height = params[1]; 
+							stockdio_iframe.style.height = `${params[1]}px`; 
+						}
+					}
+					else {
+						var stockdio_iframe = document.getElementById(params[0]); 
+						if (stockdio_iframe != undefined && stockdio_iframe != null) { 
+							stockdio_iframe.height = params[1]; 
+							stockdio_iframe.width = params[2]; 
+							stockdio_iframe.scrolling = 'no' 
+						}
+					}
+			
+					if (params[0] === 'Ticker') {
+						if (typeof(recalculate_stockdio_width) === 'undefined') { 
+							recalculate_stockdio_width = function(initial, iframeId) { 
+								if (true || (/iPhone|iPad|iPod|Android|IEMobile|blackberry|Windows Phone|webOS|Tablet|Nexus 7|Nexus 10|fennec/i.test(navigator.userAgent))) { 
+									var item = document.getElementById(iframeId); 
+									if (item != null) { 
+										var parent = item.parentElement; 
+										var maxWidth = 10000000; 
+										if (parent != null) 
+											maxWidth = parent.offsetWidth; 
+										if (initial!='') 
+											item.style.width = initial; 
+										var newWidth = Math.min(item.offsetWidth, maxWidth); 
+										item.style.width = newWidth + 'px'; 
+									} 
+								} 
+							}
+						}
+						if (typeof(orientationchange_stockdio) === 'undefined') { 
+							orientationchange_stockdio = true; 
+							window.addEventListener('orientationchange', function() { 
+								var frames = document.getElementsByTagName('iframe'); 
+								for(var i = 0;i < frames.length; i++) { 
+									if (frames[i].src.toLowerCase().indexOf('api.stockdio.com') > 0) { 
+										recalculate_stockdio_width('100%', frames[i].id); 
+									} 
+								} 
+							}, false); 
+						}
+						recalculate_stockdio_width('', params[0]);
+					}
+					break;
+					case 'displayResults':
+						var stockdio_iframe = document.getElementById(params[0]);
+						if (stockdio_iframe != undefined && stockdio_iframe != null) 
+							stockdio_iframe.height = params[1];
+					break;
+				default:
+					break;
+			}
+		}
   },false);	   
 }
 
-jQuery(function () {	
-	
-	if (typeof(stockdio_events) == "undefined") {
+(function () {
+	  if (typeof(stockdio_events) == "undefined") {
 		  stockdio_events = true;
-		  
-		stockdioOnloadFunction = function () {
-		   if (window.IntersectionObserver) {
-				var elements = document.querySelectorAll('iframe[iframesrc]');		
-				var element; var i;
-				for (i=0; i< elements.length; i++){
-					element = elements[i];
-					if (element!=null && typeof(element) != "undefined") {					
-						  var observer = new IntersectionObserver(function(entries) {
-								//entries.forEach(function(entry) {
-								var entry;var j;
-								for (j=0; j< entries.length; j++){	
-									entry = entries[j];
-									element = entry.target;
-									if (element.src != ""){
-										observer.unobserve(element);
-									}
-									else {
-										if (entry.isIntersecting) {
-											if (entry.intersectionRatio > 0) {
-												element.src = element.getAttribute("iframesrc");
+	   	   		   
+		   stockdioOnloadFunction = function () {
+			   if (window.IntersectionObserver) {
+					var elements = document.querySelectorAll('iframe[iframesrc]');		
+					var element; var i;
+					for (i=0; i< elements.length; i++){
+						element = elements[i];
+						if (element!=null && typeof(element) != "undefined") {					
+							  var observer = new IntersectionObserver(function(entries) {
+									//entries.forEach(function(entry) {
+									var entry;var j;
+									for (j=0; j< entries.length; j++){	
+										entry = entries[j];
+										element = entry.target;
+										if (element.src != ""){
+											observer.unobserve(element);
+										}
+										else {
+											if (entry.isIntersecting) {
+												if (entry.intersectionRatio > 0) {
+													element.src = element.getAttribute("iframesrc");
+												}
 											}
 										}
+									//});					
 									}
-								//});					
-								}
-						  }, {
-							rootMargin: "0px"
-						  });
-						  observer.POLL_INTERVAL = 100; // Time in milliseconds.
-						  observer.observe(element);
-						}
-					};
-			}		
-			else{
-				//browser do not support IntersectionObserver
-				changeStockdioIframeSrc();
-			}			
-		}
-		
+							  }, {
+								rootMargin: "0px"
+							  });
+							  observer.POLL_INTERVAL = 100; // Time in milliseconds.
+							  observer.observe(element);
+							}
+						};
+				}		
+				else{
+					//browser do not support IntersectionObserver
+					changeStockdioIframeSrc();
+				}			
+			}
+
 		window.addEventListener ? 
 		window.addEventListener("load",stockdioOnloadFunction,false) : 
-		window.attachEvent && window.attachEvent("onload",stockdioOnloadFunction);
-		
-		if (document.readyState === 'complete')
-			stockdioOnloadFunction();				
-
-		changeStockdioIframeSrc = function(){
-			setTimeout(function(){
-				var elements = document.querySelectorAll('iframe[iframesrc]');	
-				var element;var i;
-				for (i=0; i< elements.length; i++){
-					element = elements[i];
-					var b = false;
-					if (element!=null && typeof(element) != "undefined" && element.src == "") {
-						if (checkVisible(element))
-							element.src = element.getAttribute("iframesrc");
-						else b = true;
+		window.attachEvent && window.attachEvent("onload",stockdioOnloadFunction);				
+			
+			changeStockdioIframeSrc = function(){
+				setTimeout(function(){
+					var elements = document.querySelectorAll('iframe[iframesrc]');	
+					var element;var i;
+					for (i=0; i< elements.length; i++){
+						element = elements[i];
+						var b = false;
+						if (element!=null && typeof(element) != "undefined" && element.src == "") {
+							if (checkVisible(element))
+								element.src = element.getAttribute("iframesrc");
+							else b = true;
+						}
+						if (b) changeStockdioIframeSrc();
 					}
-					if (b) changeStockdioIframeSrc();
-				}
 
-			}, 100);
-		}
+				}, 100);
+			}
+			
+			checkVisible = function(element) {
+			  var rect = element.getBoundingClientRect();
+			  var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+			  return !(rect.bottom < 0 || rect.top - viewHeight >= 0);
+			}			
+	  }
+} ());
 
-		checkVisible = function(element) {
-		  var rect = element.getBoundingClientRect();
-		  var viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
-		  return !(rect.bottom < 0 || rect.top - viewHeight >= 0);
-		}	
-	}
-});
+
+
+
